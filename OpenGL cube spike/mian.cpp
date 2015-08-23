@@ -1,6 +1,8 @@
+#pragma once
+
+#include <GL/glew.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_opengl.h>
-#include <GL/glew.h>
 
 int main(int argc, char *argv[])
 {
