@@ -53,11 +53,11 @@ int main(int argc, char *argv[])
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
 	
-	float vertices[] = {
-		//  Position      Color             Texcoords
+	GLfloat vertices[] = {
+		//  Position   Color             Texcoords
 		-0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
-		0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
-		0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
+		 0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
+		 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
 		-0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
 	};
 
@@ -113,23 +113,44 @@ int main(int argc, char *argv[])
 	glBindTexture(GL_TEXTURE_2D, tex);
 
 	int width, height;
-	unsigned char* image = SOIL_load_image("img.png", &width, &height, 0, SOIL_LOAD_RGB);
+	//unsigned char* image = SOIL_load_image("C:/Users/Mateusz/Documents/GitHub/OpenGL-cube-spike/Debug/sample.png", &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char* image = SOIL_load_image("Textures/sample.png", &width, &height, 0, SOIL_LOAD_RGB);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
 	SOIL_free_image_data(image);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	while (true)
 	{
 		
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		if (SDL_PollEvent(&windowEvent))
 		{
-			if (windowEvent.type == SDL_QUIT) break;
+			if (windowEvent.type == SDL_QUIT) 
+				break;
 			if (windowEvent.type == SDL_KEYUP &&
-				windowEvent.key.keysym.sym == SDLK_ESCAPE) break;
+				windowEvent.key.keysym.sym == SDLK_ESCAPE) 
+				break;
 		}
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		SDL_GL_SwapWindow(window);
 	}
+	glDeleteTextures(1, &tex);
+
+	glDeleteProgram(shaderProgram);
+	glDeleteShader(fragmentShader);
+	glDeleteShader(vertexShader);
+
+	glDeleteBuffers(1, &ebo);
+	glDeleteBuffers(1, &vbo);
+
+	glDeleteVertexArrays(1, &vao);
 	SDL_GL_DeleteContext(context);
 	SDL_Quit();
 	return 0;
