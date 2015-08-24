@@ -39,10 +39,17 @@ int main(int argc, char *argv[])
 	SDL_Event windowEvent;
 
 	float vertices[] = {
-		0.0f,  0.5f, 1.0f, 0.0f, 0.0f, // Vertex 1: Red
-		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // Vertex 2: Green
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f  // Vertex 3: Blue
+		-0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // Top-left
+		0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // Top-right
+		0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // Bottom-right
+		-0.5f, -0.5f, 1.0f, 1.0f, 1.0f  // Bottom-left
 	};
+	GLuint elements[] = {
+		0, 1, 2,
+		2, 3, 0
+	};
+	GLuint ebo;
+	glGenBuffers(1, &ebo);
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -50,6 +57,8 @@ int main(int argc, char *argv[])
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexSource, NULL);
@@ -74,7 +83,7 @@ int main(int argc, char *argv[])
 	{
 		
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		if (SDL_PollEvent(&windowEvent))
 		{
 			if (windowEvent.type == SDL_QUIT) break;
