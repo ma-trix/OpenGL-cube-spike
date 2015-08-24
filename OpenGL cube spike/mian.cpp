@@ -10,15 +10,18 @@
 const GLchar* vertexSource =
 "#version 150 core\n"
 "in vec2 position;"
+"in vec3 color;"
+"out vec3 Color;"
 "void main() {"
+"	Color = color;"
 "	gl_Position = vec4(position, 0.0, 1.0);"
 "}";
 const GLchar* fragmentSource =
 "#version 150 core\n"
+"in vec3 Color;"
 "out vec4 outColor;"
-"uniform vec3 triangleColor;"
 "void main() {"
-"	outColor = vec4(triangleColor, 1.0);"
+"	outColor = vec4(Color, 1.0);"
 "}";
 
 int main(int argc, char *argv[])
@@ -36,9 +39,9 @@ int main(int argc, char *argv[])
 	SDL_Event windowEvent;
 
 	float vertices[] = {
-		0.0f,  0.5f, // Vertex 1 (X, Y)
-		0.5f, -0.5f, // Vertex 2 (X, Y)
-		-0.5f, -0.5f  // Vertex 3 (X, Y)
+		0.0f,  0.5f, 1.0f, 0.0f, 0.0f, // Vertex 1: Red
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // Vertex 2: Green
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f  // Vertex 3: Blue
 	};
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
@@ -60,12 +63,13 @@ int main(int argc, char *argv[])
 	glBindFragDataLocation(shaderProgram, 0, "outColor");
 	glLinkProgram(shaderProgram);
 	glUseProgram(shaderProgram);
-	GLint uniColor = glGetUniformLocation(shaderProgram, "triangleColor");
 	GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	GLint colorAttrib = glGetAttribLocation(shaderProgram, "color");
+	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
 	glEnableVertexAttribArray(posAttrib);
-	
-	auto t_start = std::chrono::high_resolution_clock::now();
+	glVertexAttribPointer(colorAttrib, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
+	glEnableVertexAttribArray(colorAttrib);
+
 	while (true)
 	{
 		
@@ -77,9 +81,6 @@ int main(int argc, char *argv[])
 			if (windowEvent.type == SDL_KEYUP &&
 				windowEvent.key.keysym.sym == SDLK_ESCAPE) break;
 		}
-		auto t_now = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
-		glUniform3f(uniColor, (sin(time * 4.0f) + 1.0f) / 2.0f, 0.0f, 0.0f);
 		SDL_GL_SwapWindow(window);
 	}
 	SDL_GL_DeleteContext(context);
