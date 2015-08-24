@@ -21,8 +21,9 @@ const GLchar* vertexSource =
 "uniform mat4 model;"
 "uniform mat4 view;"
 "uniform mat4 proj;"
+"uniform vec3 overrideColor;"
 "void main() {"
-"	Color = color;"
+"	Color = overrideColor * color;"
 "	Texcoord = texcoord;"
 "	gl_Position = proj * view * model * vec4(position, 1.0);"
 "}";
@@ -46,11 +47,17 @@ int main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	SDL_Window* window = SDL_CreateWindow("OpenGL", 100, 100, 800, 600, SDL_WINDOW_OPENGL);
 	SDL_GLContext context = SDL_GL_CreateContext(window);
+	
+	// Initialize GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
+
+	// Initalize OpenGL
+	glEnable(GL_DEPTH_TEST);
+
 	SDL_Event windowEvent;
 
 	// Create Vertex Array Object
@@ -104,7 +111,15 @@ int main(int argc, char *argv[])
 		 0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
 		 0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
 		-0.5f,  0.5f,  0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
+		-0.5f,  0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+
+
+		-1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+		 1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+		 1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+		 1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+		-1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+		-1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f
 	};
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -185,10 +200,10 @@ int main(int argc, char *argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	GLuint uniTrans = glGetUniformLocation(shaderProgram, "model");
+	GLuint uniModel = glGetUniformLocation(shaderProgram, "model");
 
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(1.5f, 1.5f, 1.5f),
+		glm::vec3(2.5f, 2.5f, 2.5f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 1.0f)
 		);
@@ -199,7 +214,7 @@ int main(int argc, char *argv[])
 	GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
 	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
 
-	glEnable(GL_DEPTH_TEST);
+	GLint uniColor = glGetUniformLocation(shaderProgram, "overrideColor");
 
 
 	while (true)
@@ -212,18 +227,45 @@ int main(int argc, char *argv[])
 				windowEvent.key.keysym.sym == SDLK_ESCAPE) 
 				break;
 		}
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Calculate transformation
 		auto t_now = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
 
+		// Draw cube
 		glm::mat4 model;
-		model = glm::rotate(model, time * glm::radians(180.0f),	glm::vec3(0.0f, 0.0f, 1.0f));
-		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(model));
-
+		model = glm::rotate(model, time * glm::radians(90.0f),	glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		glEnable(GL_STENCIL_TEST);
+
+		glClear(GL_STENCIL_BUFFER_BIT);
+		// Draw the floor
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);	// Set any stencil to 1
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilMask(0xFF);				// Write to stencil buffer
+		glDepthMask(GL_FALSE);				// Don't write to depth buffer
+		glClear(GL_STENCIL_BUFFER_BIT);		// Clear stencil buffer (0 by default)
+		
+		glDrawArrays(GL_TRIANGLES, 36, 6);
+		
+		// Draw reflection
+		glStencilFunc(GL_EQUAL, 1, 0xFF);	// Pass test if stencil value is 1
+		glStencilMask(0x00);				// Don't write anything to stencil buffer
+		glDepthMask(GL_TRUE);				// Write to depth buffer
+
+		model = glm::scale(glm::translate(model, glm::vec3(0.0f, 0.0f, -1.0f)), glm::vec3(1.0f, 1.0f, -1.0f));
+		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
+		
+		glUniform3f(uniColor, 0.5f, 0.5f, 0.5f);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glUniform3f(uniColor, 1.0f, 1.0f, 1.0f);
+		
+		glDisable(GL_STENCIL_TEST);
+		
 		SDL_GL_SwapWindow(window);
 	}
 	glDeleteTextures(2, textures);
