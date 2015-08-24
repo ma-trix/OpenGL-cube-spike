@@ -18,11 +18,13 @@ const GLchar* vertexSource =
 "in vec2 texcoord;"
 "out vec3 Color;"
 "out vec2 Texcoord;"
-"uniform mat4 trans;"
+"uniform mat4 model;"
+"uniform mat4 view;"
+"uniform mat4 proj;"
 "void main() {"
 "	Color = color;"
 "	Texcoord = texcoord;"
-"	gl_Position = trans * vec4(position, 0.0, 1.0);"
+"	gl_Position = proj * view * model * vec4(position, 0.0, 1.0);"
 "}";
 const GLchar* fragmentSource =
 "#version 150 core\n"
@@ -148,8 +150,20 @@ int main(int argc, char *argv[])
 	trans = glm::rotate(trans, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	glm::vec4 result = trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
-	GLuint uniTrans = glGetUniformLocation(shaderProgram, "trans");
+	GLuint uniTrans = glGetUniformLocation(shaderProgram, "model");
 	glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(1.2f, 1.2f, 1.2f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f)
+		);
+	GLint uniView = glGetUniformLocation(shaderProgram, "view");
+	glUniformMatrix4fv(uniView, 1, GL_FALSE, glm::value_ptr(view));
+
+	glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 1.0f, 10.0f);
+	GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
+	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
 
 	auto t_start = std::chrono::high_resolution_clock::now();
 	while (true)
