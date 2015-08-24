@@ -6,6 +6,9 @@
 #include <forward_list>
 #include <chrono>
 #include <SOIL/SOIL.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // Shader sources
 const GLchar* vertexSource =
@@ -15,10 +18,11 @@ const GLchar* vertexSource =
 "in vec2 texcoord;"
 "out vec3 Color;"
 "out vec2 Texcoord;"
+"uniform mat4 trans;"
 "void main() {"
 "	Color = color;"
 "	Texcoord = texcoord;"
-"	gl_Position = vec4(position, 0.0, 1.0);"
+"	gl_Position = trans * vec4(position, 0.0, 1.0);"
 "}";
 const GLchar* fragmentSource =
 "#version 150 core\n"
@@ -140,10 +144,16 @@ int main(int argc, char *argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	glm::mat4 trans;
+	trans = glm::rotate(trans, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	glm::vec4 result = trans * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+
+	GLuint uniTrans = glGetUniformLocation(shaderProgram, "trans");
+	glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+	auto t_start = std::chrono::high_resolution_clock::now();
 	while (true)
 	{
-		
-
 		if (SDL_PollEvent(&windowEvent))
 		{
 			if (windowEvent.type == SDL_QUIT) 
@@ -154,7 +164,19 @@ int main(int argc, char *argv[])
 		}
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// Calculate transformation
+		auto t_now = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
+
+		glm::mat4 trans;
+		trans = glm::rotate(
+			trans,
+			time * glm::radians(180.0f),
+			glm::vec3(0.0f, 0.0f, 1.0f)
+			);
+		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
 
 		SDL_GL_SwapWindow(window);
 	}
