@@ -39,6 +39,8 @@ const GLchar* fragmentSource =
 
 int main(int argc, char *argv[])
 {
+	auto t_start = std::chrono::high_resolution_clock::now();
+	
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -109,7 +111,7 @@ int main(int argc, char *argv[])
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// Create an Element Arrya
-	GLuint ebo;
+	/*GLuint ebo;
 	glGenBuffers(1, &ebo);
 
 	GLuint elements[] = {
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
 	};
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);*/
 
 	// Create and compile the vertex shader
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -186,7 +188,7 @@ int main(int argc, char *argv[])
 	GLuint uniTrans = glGetUniformLocation(shaderProgram, "model");
 
 	glm::mat4 view = glm::lookAt(
-		glm::vec3(1.2f, 1.2f, 1.2f),
+		glm::vec3(1.5f, 1.5f, 1.5f),
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 1.0f)
 		);
@@ -197,7 +199,9 @@ int main(int argc, char *argv[])
 	GLint uniProj = glGetUniformLocation(shaderProgram, "proj");
 	glUniformMatrix4fv(uniProj, 1, GL_FALSE, glm::value_ptr(proj));
 
-	auto t_start = std::chrono::high_resolution_clock::now();
+	glEnable(GL_DEPTH_TEST);
+
+
 	while (true)
 	{
 		if (SDL_PollEvent(&windowEvent))
@@ -209,19 +213,15 @@ int main(int argc, char *argv[])
 				break;
 		}
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		// Calculate transformation
 		auto t_now = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration_cast<std::chrono::duration<float>>(t_now - t_start).count();
 
-		glm::mat4 trans;
-		trans = glm::rotate(
-			trans,
-			time * glm::radians(180.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f)
-			);
-		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+		glm::mat4 model;
+		model = glm::rotate(model, time * glm::radians(180.0f),	glm::vec3(0.0f, 0.0f, 1.0f));
+		glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(model));
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		SDL_GL_SwapWindow(window);
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 	glDeleteShader(fragmentShader);
 	glDeleteShader(vertexShader);
 
-	glDeleteBuffers(1, &ebo);
+	//glDeleteBuffers(1, &ebo);
 	glDeleteBuffers(1, &vbo);
 
 	glDeleteVertexArrays(1, &vao);
